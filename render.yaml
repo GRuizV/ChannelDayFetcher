@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: slack-channel-fetcher
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run ui.py --server.port=$PORT --server.address=0.0.0.0
+    envVars:
+      - key: SLACK_TOKEN
+        sync: false  # Set manually in Render dashboard
+

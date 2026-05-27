@@ -1,0 +1,7 @@
+# Slack Channel Fetcher - Requirements
+# Core Dependencies
+slack_sdk==3.34.0
+streamlit==1.38.0
+
+# Utility Libraries
+python-dotenv==1.0.1
