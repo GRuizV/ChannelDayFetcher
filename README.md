@@ -64,8 +64,8 @@ channeldayfetcher/
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/GRuizV/channeldayfetcher.git
-cd channeldayfetcher
+git clone https://github.com/GRuizV/ChannelDayFetcher.git
+cd ChannelDayFetcher
 
 python -m venv venv
 source venv/bin/activate          # On Windows: venv\Scripts\activate
