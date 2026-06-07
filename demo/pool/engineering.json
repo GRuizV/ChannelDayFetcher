@@ -1,0 +1,243 @@
+[
+  {
+    "id": "e001",
+    "user": "U_DEMO_ALEX",
+    "text": "Anyone seeing intermittent 502s from the API gateway in the last hour? Got two reports from users.",
+    "days_ago": 0,
+    "time_of_day": "09:15:00",
+    "replies": [
+      {"user": "U_DEMO_RILEY", "text": "Checking the upstream now — looks like a single pod cycling. Not enough to page but worth watching."},
+      {"user": "U_DEMO_ALEX", "text": "ack, will keep an eye on it"}
+    ]
+  },
+  {
+    "id": "e002",
+    "user": "U_DEMO_DEVI",
+    "text": "PR up for the search index refactor: <https://example.com/repo/pull/482>. Would love a second pair of eyes on the migration script in particular.",
+    "days_ago": 0,
+    "time_of_day": "10:40:00",
+    "replies": [
+      {"user": "U_DEMO_ALEX", "text": "Will review after standup"}
+    ]
+  },
+  {
+    "id": "e003",
+    "user": "U_DEMO_RILEY",
+    "text": "Quick reminder: do *not* run `make seed` against the staging DB without checking with me first — there's a known race that wipes the catalog table.",
+    "days_ago": 0,
+    "time_of_day": "14:00:00"
+  },
+  {
+    "id": "e004",
+    "user": "U_DEMO_ALEX",
+    "text": "Got bitten by this gotcha today:\n```\nfor x in queryset:\n    x.delete()\n```\nThis re-evaluates the queryset every iteration. Use `queryset.delete()` or iterate over a `list(queryset)` first.",
+    "days_ago": 1,
+    "time_of_day": "13:20:00",
+    "replies": [
+      {"user": "U_DEMO_DEVI", "text": "oof, classic. Worth adding to the team wiki?"},
+      {"user": "U_DEMO_ALEX", "text": "Will do"}
+    ]
+  },
+  {
+    "id": "e005",
+    "user": "U_DEMO_DEVI",
+    "text": "Heads-up: bumping the lockfile to pull in the new `httpx` version. Run `pip install -r requirements.txt` after your next pull.",
+    "days_ago": 1,
+    "time_of_day": "16:00:00"
+  },
+  {
+    "id": "e006",
+    "user": "U_DEMO_RILEY",
+    "text": "Postmortem doc for yesterday's incident is up. TL;DR: a single environment variable rename broke autoscaling. Two action items.",
+    "days_ago": 2,
+    "time_of_day": "11:30:00",
+    "file_attachments": [
+      {
+        "name": "incident_postmortem.svg",
+        "mimetype": "image/svg+xml",
+        "url": "https://raw.githubusercontent.com/GRuizV/ChannelDayFetcher/main/demo/assets/incident_postmortem.svg"
+      }
+    ]
+  },
+  {
+    "id": "e007",
+    "user": "U_DEMO_ALEX",
+    "text": "Debugging tip of the day: if you ever see\n`asyncio.exceptions.CancelledError`\nwith no other context in a `aiohttp` server, check whether your handler is `async` but blocks on a sync call. Took me 2 hours.",
+    "days_ago": 3,
+    "time_of_day": "15:45:00"
+  },
+  {
+    "id": "e008",
+    "user": "U_DEMO_DEVI",
+    "text": "What does the team think about adopting `ruff` for linting? It's basically a drop-in for flake8 + isort + bunch of others, and ~100x faster.",
+    "days_ago": 4,
+    "time_of_day": "10:00:00",
+    "replies": [
+      {"user": "U_DEMO_RILEY", "text": "+1, we've been wanting to consolidate the linter zoo anyway"},
+      {"user": "U_DEMO_ALEX", "text": "Same. Want to open a PR with the initial config?"},
+      {"user": "U_DEMO_DEVI", "text": "On it"}
+    ]
+  },
+  {
+    "id": "e009",
+    "user": "U_DEMO_RILEY",
+    "text": "Anyone seen this before?\n```\nFATAL: too many connections for role \"app_prod\" (currently 100)\n```\nHappens once or twice a day, never long enough to alert.",
+    "days_ago": 5,
+    "time_of_day": "11:15:00",
+    "replies": [
+      {"user": "U_DEMO_DEVI", "text": "Sounds like a connection-pool leak on one of the workers. PgBouncer in front would mask this but the underlying leak is worth finding."},
+      {"user": "U_DEMO_RILEY", "text": "Yeah, I'll add some pool-metrics instrumentation"}
+    ]
+  },
+  {
+    "id": "e010",
+    "user": "U_DEMO_ALEX",
+    "text": "New deploy diagram is up in the docs folder — please yell if anything is wrong.",
+    "days_ago": 6,
+    "time_of_day": "14:30:00",
+    "file_attachments": [
+      {
+        "name": "deploy_diagram.svg",
+        "mimetype": "image/svg+xml",
+        "url": "https://raw.githubusercontent.com/GRuizV/ChannelDayFetcher/main/demo/assets/deploy_diagram.svg"
+      }
+    ]
+  },
+  {
+    "id": "e011",
+    "user": "U_DEMO_DEVI",
+    "text": "Anyone want to pair on the cache-invalidation work this afternoon? Could use a second brain.",
+    "days_ago": 7,
+    "time_of_day": "13:00:00",
+    "replies": [
+      {"user": "U_DEMO_ALEX", "text": "I'm free after 3"},
+      {"user": "U_DEMO_DEVI", "text": ":handshake:"}
+    ]
+  },
+  {
+    "id": "e012",
+    "user": "U_DEMO_RILEY",
+    "text": "I'm going to start enforcing the *no merges before tests pass* rule in CI as a hard block, not just a warning. Heads up.",
+    "days_ago": 9,
+    "time_of_day": "10:15:00"
+  },
+  {
+    "id": "e013",
+    "user": "U_DEMO_ALEX",
+    "text": "Reminder for newer folks: branch names follow `<initials>/<short-kebab>`. Helps with the auto-routing for code review.",
+    "days_ago": 11,
+    "time_of_day": "09:30:00"
+  },
+  {
+    "id": "e014",
+    "user": "U_DEMO_DEVI",
+    "text": "Spec for the audit-log feature is open for review — comments welcome. Key open question is retention: 30d, 90d, or 1y?",
+    "days_ago": 13,
+    "time_of_day": "16:00:00",
+    "replies": [
+      {"user": "U_DEMO_RILEY", "text": "90d unless we get a compliance requirement that pushes us to 1y. Cheaper and still useful for debugging."}
+    ]
+  },
+  {
+    "id": "e015",
+    "user": "U_DEMO_RILEY",
+    "text": "Spent the morning chasing a memory leak that turned out to be... a missing `await` on a cleanup function. The classic.",
+    "days_ago": 16,
+    "time_of_day": "12:00:00",
+    "replies": [
+      {"user": "U_DEMO_ALEX", "text": "Linter rule for that exists in pyflakes, we should turn it on"}
+    ]
+  },
+  {
+    "id": "e016",
+    "user": "U_DEMO_ALEX",
+    "text": "Updated the local dev README with the new docker-compose flow. `make dev` should now Just Work :tm:",
+    "days_ago": 19,
+    "time_of_day": "11:00:00"
+  },
+  {
+    "id": "e017",
+    "user": "U_DEMO_DEVI",
+    "text": "Architecture diagram for the new ingestion pipeline. Three stages, async between each, idempotent retries built in.",
+    "days_ago": 22,
+    "time_of_day": "15:00:00",
+    "file_attachments": [
+      {
+        "name": "ingestion_pipeline.svg",
+        "mimetype": "image/svg+xml",
+        "url": "https://raw.githubusercontent.com/GRuizV/ChannelDayFetcher/main/demo/assets/ingestion_pipeline.svg"
+      }
+    ],
+    "replies": [
+      {"user": "U_DEMO_RILEY", "text": "Like the explicit dead-letter queue. One question: how do we replay from there?"},
+      {"user": "U_DEMO_DEVI", "text": "Manual CLI command for now, will spec a self-service flow once we see how often it gets used"}
+    ]
+  },
+  {
+    "id": "e018",
+    "user": "U_DEMO_RILEY",
+    "text": "TIL: `pg_stat_statements` is way more useful than I gave it credit for. Found three queries we can index our way out of.",
+    "days_ago": 26,
+    "time_of_day": "10:45:00"
+  },
+  {
+    "id": "e019",
+    "user": "U_DEMO_ALEX",
+    "text": "Tests are flaky on `test_retry_with_jitter` — anyone seen this? Looks like a timing assertion that's too tight.",
+    "days_ago": 30,
+    "time_of_day": "14:20:00",
+    "replies": [
+      {"user": "U_DEMO_DEVI", "text": "Yeah, I bumped the tolerance in PR #471 — should be in main already. Pull?"},
+      {"user": "U_DEMO_ALEX", "text": "Ah missed that. Pulling now"}
+    ]
+  },
+  {
+    "id": "e020",
+    "user": "U_DEMO_DEVI",
+    "text": "Cleanup PR: removed 1.2k lines of dead code. Big chunk was the legacy v1 import path nobody's used in months.",
+    "days_ago": 37,
+    "time_of_day": "16:30:00",
+    "replies": [
+      {"user": "U_DEMO_RILEY", "text": "Thank you :pray:"}
+    ]
+  },
+  {
+    "id": "e021",
+    "user": "U_DEMO_ALEX",
+    "text": "Notes from this morning's architecture review: leaning toward event-driven for the notifications subsystem. Detailed write-up coming.",
+    "days_ago": 44,
+    "time_of_day": "11:15:00"
+  },
+  {
+    "id": "e022",
+    "user": "U_DEMO_RILEY",
+    "text": "First successful end-to-end run of the new pipeline. ~3 minutes for the full backfill. We can probably squeeze more out of it but this is already a 5x improvement.",
+    "days_ago": 55,
+    "time_of_day": "17:30:00"
+  },
+  {
+    "id": "e023",
+    "user": "U_DEMO_DEVI",
+    "text": "Joining the engineering channel for the first time as a new hire :wave: looking forward to digging in.",
+    "days_ago": 70,
+    "time_of_day": "09:30:00",
+    "replies": [
+      {"user": "U_DEMO_ALEX", "text": "Welcome! Ping me with any onboarding questions"},
+      {"user": "U_DEMO_RILEY", "text": "What he said :rocket:"}
+    ]
+  },
+  {
+    "id": "e024",
+    "user": "U_DEMO_ALEX",
+    "text": "Initial commit on the new search service. Just a skeleton but the basic structure is there.",
+    "days_ago": 80,
+    "time_of_day": "13:00:00"
+  },
+  {
+    "id": "e025",
+    "user": "U_DEMO_RILEY",
+    "text": "Setting up this channel — let's keep deep technical discussion here so #general doesn't get too noisy.",
+    "days_ago": 89,
+    "time_of_day": "10:00:00"
+  }
+]

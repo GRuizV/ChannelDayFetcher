@@ -9,13 +9,20 @@ Running command:
     streamlit run ui.py
 """
 
+import json
+import random
+import time
 import streamlit as st
 from datetime import date, datetime as dt
 from pathlib import Path
 from slack_sdk import WebClient
 
 # Import from refactored src module
-from src import SlackFetcher, UserCache, ChannelCache, MessageFormatter, DataExporter, load_config, logger
+from src import (
+    SlackFetcher, DemoFetcher,
+    UserCache, ChannelCache, MessageFormatter, DataExporter,
+    load_config, is_demo_mode, logger,
+)
 
 
 # ==============================
@@ -24,28 +31,42 @@ from src import SlackFetcher, UserCache, ChannelCache, MessageFormatter, DataExp
 
 # Get the project root directory (where this file is located)
 PROJECT_ROOT = Path(__file__).parent
+DEMO_MODE = is_demo_mode()
+
+# Simulated-latency range for demo mode — makes the local-disk reads feel
+# like a real Slack API roundtrip and gives Streamlit Cloud cold-start
+# something to hide behind.
+DEMO_DELAY_RANGE = (3.5, 5.5)
 
 # Initialize Streamlit page
 st.set_page_config(page_title="Slack Channel Fetcher", layout="wide")
 st.title("🗂️​​ Slack Channel Fetcher 🐕‍🦺")
 
+if DEMO_MODE:
+    st.caption("🎬 Demo mode — serving a baked sample conversation. Set `DEMO_MODE=false` and provide a `SLACK_TOKEN` to fetch from a real workspace.")
+
 # Log application start
-logger.info("Streamlit UI started")
+logger.info(f"Streamlit UI started (demo_mode={DEMO_MODE})")
 
-# # Testing line
-# st.write("✅ Streamlit is running!")
-
-# Load config (uses default location: PROJECT_ROOT/config.json)
+# Load config
 config = load_config()
 
 # APP SETUP - Paths relative to project root
-USER_CACHE_FILE = str(PROJECT_ROOT / "user_cache.json")
-CHANNEL_CACHE_FILE = str(PROJECT_ROOT / "channel_cache.json")
+if DEMO_MODE:
+    USER_CACHE_FILE = str(PROJECT_ROOT / "demo" / "sample_user_map.json")
+    # In demo mode the *runtime* channel cache starts empty — the user must
+    # click 🔄 to "load" channels from the static source file. This mirrors
+    # how real Slack mode behaves (empty cache until first refresh).
+    DEMO_CHANNEL_SOURCE = PROJECT_ROOT / "demo" / "sample_channel_cache.json"
+    CHANNEL_CACHE_FILE = str(PROJECT_ROOT / "demo" / "_runtime_channel_cache.json")
+else:
+    USER_CACHE_FILE = str(PROJECT_ROOT / "user_cache.json")
+    CHANNEL_CACHE_FILE = str(PROJECT_ROOT / "channel_cache.json")
 EXPORT_DIR = PROJECT_ROOT / "exports"
 EXPORT_DIR.mkdir(exist_ok=True)
 
-# Initialize Slack client for channel fetching
-slack_client = WebClient(token=config["slack_token"])
+# Initialize Slack client for channel fetching (real mode only)
+slack_client = None if DEMO_MODE else WebClient(token=config["slack_token"])
 
 
 
@@ -59,12 +80,18 @@ st.sidebar.header("🔧 Configuration")
 # Channel Cache and Selection
 channel_cache = ChannelCache(cache_file=CHANNEL_CACHE_FILE)
 
-# Refresh channels button
+# Refresh channels button. In demo mode it simulates the API roundtrip with a
+# 3.5-5.5s delay and then loads the static channel list from disk.
 col_refresh1, col_refresh2 = st.sidebar.columns([3, 1])
 with col_refresh2:
     if st.button("🔄", help="Refresh channel list"):
         with st.spinner("Refreshing channels..."):
-            channel_cache.refresh_channels(slack_client)
+            if DEMO_MODE:
+                time.sleep(random.uniform(*DEMO_DELAY_RANGE))
+                with open(DEMO_CHANNEL_SOURCE, encoding="utf-8") as f:
+                    channel_cache.channel_map = json.load(f)
+            else:
+                channel_cache.refresh_channels(slack_client)
         st.rerun()
 
 # Get channel list
@@ -127,9 +154,56 @@ show_timestamps = st.sidebar.checkbox("Show Timestamps", value=True, help="Displ
 
 st.sidebar.markdown("---")
 
+# --- Filter Section ---
+st.sidebar.subheader("🔎 Filter")
+
+# Build the user list from whatever's currently known: session state if a fetch
+# has happened, else fall back to the on-disk user cache. In demo mode this
+# means the six sample users are available immediately.
+_filter_user_map = st.session_state.get("user_map") or UserCache(cache_file=USER_CACHE_FILE).get_map()
+_filter_user_names = sorted(_filter_user_map.values()) if _filter_user_map else []
+
+filter_mode = st.sidebar.radio(
+    "Filter mode",
+    options=["None", "Author", "Includes"],
+    index=0,
+    help=(
+        "Author: only top-level messages started by the selected user.\n\n"
+        "Includes: any thread where the selected user appears (parent or any reply)."
+    ),
+)
+
+selected_filter_user_id = None
+if filter_mode != "None":
+    if _filter_user_names:
+        selected_user_name = st.sidebar.selectbox("User", options=_filter_user_names)
+        selected_filter_user_id = next(
+            (uid for uid, name in _filter_user_map.items() if name == selected_user_name),
+            None,
+        )
+    else:
+        st.sidebar.info("Fetch some messages first to populate the user list.")
+
+st.sidebar.markdown("---")
+
 # --- Export Section ---
 export_csv = st.sidebar.checkbox("Export to CSV", value=True)
 export_json = st.sidebar.checkbox("Export to JSON", value=False)
+
+
+def apply_filter(msgs: list[dict], mode: str, user_id: str | None) -> list[dict]:
+    """Filter messages by Author (top-level only) or Includes (any thread participant)."""
+    if mode == "None" or not user_id:
+        return msgs
+    if mode == "Author":
+        return [m for m in msgs if m.get("user") == user_id]
+    if mode == "Includes":
+        def participates(m: dict) -> bool:
+            if m.get("user") == user_id:
+                return True
+            return any(r.get("user") == user_id for r in m.get("replies", []))
+        return [m for m in msgs if participates(m)]
+    return msgs
 
 
 
@@ -187,13 +261,18 @@ if (fetch_today_btn or fetch_range_btn) and channel_id:
     st.subheader("📤 Fetching Messages...")
     logger.info(f"User initiated message fetch for channel {channel_id}")
     
-    with st.spinner("Contacting Slack API..."):
-        
+    spinner_msg = "Contacting Slack API..." if not DEMO_MODE else "Contacting Slack API..."
+    with st.spinner(spinner_msg):
+
+        # In demo mode, simulate the API roundtrip so the UX matches real mode.
+        if DEMO_MODE:
+            time.sleep(random.uniform(*DEMO_DELAY_RANGE))
+
         # Initialize components
-        fetcher = SlackFetcher(token=config["slack_token"])
+        fetcher = DemoFetcher() if DEMO_MODE else SlackFetcher(token=config["slack_token"])
         cache = UserCache(cache_file=USER_CACHE_FILE)
         formatter = MessageFormatter()
-        
+
         # Fetch messages (already filtered for relevance)
         if fetch_today_btn:
             messages = fetcher.fetch_today(channel_id)
@@ -201,9 +280,10 @@ if (fetch_today_btn or fetch_range_btn) and channel_id:
         else:
             start_str, end_str = str(start_date), str(end_date)
             messages = fetcher.fetch_messages_in_range(channel_id, start_str, end_str)
-        
-        # Update user cache
-        cache.update_from_messages(fetcher.client, messages)
+
+        # Update user cache (skipped in demo mode — sample_user_map is pre-populated)
+        if not DEMO_MODE:
+            cache.update_from_messages(fetcher.client, messages)
         user_map = cache.get_map()
     
     # Sort messages based on user preference
@@ -238,13 +318,23 @@ if (fetch_today_btn or fetch_range_btn) and channel_id:
 # ==============================
 # Display messages if they exist in session state (persists across reruns)
 if 'messages' in st.session_state and st.session_state.messages_fetched:
-    messages = st.session_state.messages
+    raw_messages = st.session_state.messages
     user_map = st.session_state.user_map
     start_str = st.session_state.start_str
     end_str = st.session_state.end_str
     sort_emoji = st.session_state.get('sort_emoji', '⏫')
     sort_order_stored = st.session_state.get('sort_order', 'Oldest First (Chronological)')
-    
+
+    # Apply Author/Includes filter to both display AND exports
+    messages = apply_filter(raw_messages, filter_mode, selected_filter_user_id)
+
+    if filter_mode != "None" and selected_filter_user_id:
+        filter_user_name = user_map.get(selected_filter_user_id, selected_filter_user_id)
+        st.info(
+            f"🔎 Filter active — **{filter_mode}** = `{filter_user_name}` · "
+            f"{len(messages)} of {len(raw_messages)} messages shown"
+        )
+
     # Initialize formatter and exporter for display/export
     formatter = MessageFormatter()
     exporter = DataExporter(export_dir=str(EXPORT_DIR))

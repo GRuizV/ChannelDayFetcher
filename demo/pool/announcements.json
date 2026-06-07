@@ -1,0 +1,156 @@
+[
+  {
+    "id": "a001",
+    "user": "U_DEMO_CASEY",
+    "text": "*Office closed Monday* for the public holiday. Async work as usual, no meetings.",
+    "days_ago": 0,
+    "time_of_day": "08:00:00"
+  },
+  {
+    "id": "a002",
+    "user": "U_DEMO_SAM",
+    "text": "All-hands tomorrow at 10am. Agenda is in the calendar invite. Topics: Q3 results, hiring update, roadmap.",
+    "days_ago": 0,
+    "time_of_day": "16:45:00"
+  },
+  {
+    "id": "a003",
+    "user": "U_DEMO_CASEY",
+    "text": "*Welcome Devi to the team!* Senior engineer, joins us today. She'll be focusing on the search and discovery stack. Please give her a warm welcome :wave:",
+    "days_ago": 1,
+    "time_of_day": "09:00:00",
+    "replies": [
+      {"user": "U_DEMO_ALEX", "text": "Welcome!"},
+      {"user": "U_DEMO_JORDAN", "text": ":tada:"},
+      {"user": "U_DEMO_RILEY", "text": "Excited to have you, Devi"}
+    ]
+  },
+  {
+    "id": "a004",
+    "user": "U_DEMO_SAM",
+    "text": "Customer-facing release notes for v2.4 are now live: <https://example.com/changelog>. Big ones this round: bulk import, custom date filters, and a faster search backend.",
+    "days_ago": 1,
+    "time_of_day": "14:00:00"
+  },
+  {
+    "id": "a005",
+    "user": "U_DEMO_CASEY",
+    "text": "Reminder: end-of-month performance check-ins are open. Schedule via the calendar link. 30 minutes, informal.",
+    "days_ago": 3,
+    "time_of_day": "10:00:00"
+  },
+  {
+    "id": "a006",
+    "user": "U_DEMO_SAM",
+    "text": "Roadmap update slide deck for this quarter — sharing here for visibility :memo:",
+    "days_ago": 5,
+    "time_of_day": "15:30:00",
+    "file_attachments": [
+      {
+        "name": "Q3_roadmap.svg",
+        "mimetype": "image/svg+xml",
+        "url": "https://raw.githubusercontent.com/GRuizV/ChannelDayFetcher/main/demo/assets/Q3_roadmap.svg"
+      }
+    ],
+    "replies": [
+      {"user": "U_DEMO_JORDAN", "text": "Good to see the design system work finally on the timeline"},
+      {"user": "U_DEMO_ALEX", "text": "Same. Excited."}
+    ]
+  },
+  {
+    "id": "a007",
+    "user": "U_DEMO_CASEY",
+    "text": "Heads up: we'll be migrating the company email to a new provider next week. Short downtime expected on Saturday morning.",
+    "days_ago": 6,
+    "time_of_day": "11:00:00"
+  },
+  {
+    "id": "a008",
+    "user": "U_DEMO_SAM",
+    "text": "We're hiring! Open roles: 1x senior engineer (infra), 1x product designer. Referrals welcome. Bonus posted in the HR doc.",
+    "days_ago": 9,
+    "time_of_day": "13:00:00"
+  },
+  {
+    "id": "a009",
+    "user": "U_DEMO_CASEY",
+    "text": "*Quarterly metrics update*\n- Revenue: +18% QoQ\n- Active users: +24% QoQ\n- NPS: 52 (+6)\n- Churn: 2.1% (-0.4)\nFull deck linked in the doc :chart_with_upwards_trend:",
+    "days_ago": 14,
+    "time_of_day": "17:00:00"
+  },
+  {
+    "id": "a010",
+    "user": "U_DEMO_SAM",
+    "text": "We're sponsoring the regional PyData meetup next month. If you'd like to attend or give a lightning talk, ping me.",
+    "days_ago": 18,
+    "time_of_day": "12:00:00"
+  },
+  {
+    "id": "a011",
+    "user": "U_DEMO_CASEY",
+    "text": "*Series A closed* — full memo to follow but wanted to say thanks to the team for the work that made this possible. More to come :rocket:",
+    "days_ago": 24,
+    "time_of_day": "16:00:00",
+    "replies": [
+      {"user": "U_DEMO_ALEX", "text": "Huge :tada:"},
+      {"user": "U_DEMO_JORDAN", "text": ":raised_hands:"},
+      {"user": "U_DEMO_RILEY", "text": "Congratulations everyone"}
+    ]
+  },
+  {
+    "id": "a012",
+    "user": "U_DEMO_SAM",
+    "text": "Customer interview pipeline for next week is full — 6 sessions across 3 segments. If you want to sit in, calendar links are in the research doc.",
+    "days_ago": 28,
+    "time_of_day": "10:30:00"
+  },
+  {
+    "id": "a013",
+    "user": "U_DEMO_CASEY",
+    "text": "*Reminder: Team offsite Apr 15-17.* Travel details in your inbox. Reach out to Sam if anything's unclear.",
+    "days_ago": 33,
+    "time_of_day": "11:00:00"
+  },
+  {
+    "id": "a014",
+    "user": "U_DEMO_SAM",
+    "text": "We hit 1,000 active users this week :tada: A milestone worth celebrating.",
+    "days_ago": 40,
+    "time_of_day": "15:00:00",
+    "replies": [
+      {"user": "U_DEMO_CASEY", "text": "Onwards"}
+    ]
+  },
+  {
+    "id": "a015",
+    "user": "U_DEMO_CASEY",
+    "text": "New hire: *Riley* joining the team next Monday as an SRE. Big addition for the infra side.",
+    "days_ago": 50,
+    "time_of_day": "09:30:00"
+  },
+  {
+    "id": "a016",
+    "user": "U_DEMO_SAM",
+    "text": "We launched! :rocket: Public beta open as of this morning. Tweet, share, refer — whatever you've got.",
+    "days_ago": 63,
+    "time_of_day": "08:00:00",
+    "replies": [
+      {"user": "U_DEMO_JORDAN", "text": ":fire::fire::fire:"},
+      {"user": "U_DEMO_ALEX", "text": "What a moment"}
+    ]
+  },
+  {
+    "id": "a017",
+    "user": "U_DEMO_CASEY",
+    "text": "Pre-launch sprint kickoff. Two weeks of focus before we open the gates. You know what to do.",
+    "days_ago": 78,
+    "time_of_day": "10:00:00"
+  },
+  {
+    "id": "a018",
+    "user": "U_DEMO_SAM",
+    "text": "Setting up this channel for company-wide announcements. Keep it broadcast-only please — discussion lives elsewhere.",
+    "days_ago": 89,
+    "time_of_day": "09:00:00"
+  }
+]

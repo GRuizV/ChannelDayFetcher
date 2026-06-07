@@ -19,6 +19,7 @@ ENV/
 config.json
 user_cache.json
 channel_cache.json
+demo/base conversations/
 
 # Exports (local data — not for version control)
 exports/

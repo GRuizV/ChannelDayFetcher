@@ -10,11 +10,16 @@ Usage:
 from datetime import datetime
 from pathlib import Path
 from slack_sdk import WebClient
-from src import SlackFetcher, UserCache, ChannelCache, MessageFormatter, DataExporter, load_config
+from src import (
+    SlackFetcher, DemoFetcher,
+    UserCache, ChannelCache, MessageFormatter, DataExporter,
+    load_config, is_demo_mode,
+)
 
 
 # Get the project root directory (where this file is located)
 PROJECT_ROOT = Path(__file__).parent
+DEMO_MODE = is_demo_mode()
 
 
 def display_messages(messages: list[dict], user_map: dict[str, str]) -> None:
@@ -65,43 +70,52 @@ def display_messages(messages: list[dict], user_map: dict[str, str]) -> None:
 
 def main():
     """Main CLI entry point."""
-    
+
     print("\n" + "="*80)
-    print("🚀 Slack Channel Fetcher - CLI Mode")
+    print("🚀 Slack Channel Fetcher - CLI Mode" + ("  🎬 DEMO" if DEMO_MODE else ""))
     print("="*80 + "\n")
-    
-    # Configuration (uses default location: PROJECT_ROOT/config.json)
+
+    # Configuration
     config = load_config()
-    
-    # Initialize Slack client
-    slack_client = WebClient(token=config["slack_token"])
-    
+
+    # Initialize Slack client (real mode only)
+    slack_client = None if DEMO_MODE else WebClient(token=config["slack_token"])
+
+    # Cache paths differ by mode
+    if DEMO_MODE:
+        channel_cache_file = str(PROJECT_ROOT / "demo" / "sample_channel_cache.json")
+        user_cache_file = str(PROJECT_ROOT / "demo" / "sample_user_map.json")
+    else:
+        channel_cache_file = str(PROJECT_ROOT / "channel_cache.json")
+        user_cache_file = str(PROJECT_ROOT / "user_cache.json")
+
     # Initialize channel cache
-    channel_cache = ChannelCache(cache_file=str(PROJECT_ROOT / "channel_cache.json"))
-    
+    channel_cache = ChannelCache(cache_file=channel_cache_file)
+
     # Channel selection
     print("\n📺 Channel Selection:")
     channels = channel_cache.get_channel_list()
-    
-    if not channels:
+
+    if not channels and not DEMO_MODE:
         print("⚠️  No channels found in cache.")
         refresh = input("Refresh channel list? (y/n, default=y): ").strip().lower()
         if refresh != "n":
             channel_cache.refresh_channels(slack_client)
             channels = channel_cache.get_channel_list()
-    
+
     if not channels:
         print("❌ No channels available. Make sure the bot is added to at least one channel.")
         return
-    
+
     # Display channels
     for idx, (name, cid) in enumerate(channels, 1):
         print(f"{idx}. {name}")
-    
+
     # Get user selection
+    prompt_suffix = "" if DEMO_MODE else ", or 'r' to refresh"
     while True:
-        choice = input(f"\nSelect channel (1-{len(channels)}, or 'r' to refresh): ").strip().lower()
-        if choice == 'r':
+        choice = input(f"\nSelect channel (1-{len(channels)}{prompt_suffix}): ").strip().lower()
+        if choice == 'r' and not DEMO_MODE:
             channel_cache.refresh_channels(slack_client)
             channels = channel_cache.get_channel_list()
             for idx, (name, cid) in enumerate(channels, 1):
@@ -112,12 +126,12 @@ def main():
             print(f"✅ Selected: {channel_name}")
             break
         else:
-            print(f"⚠️  Please enter a number between 1 and {len(channels)}, or 'r' to refresh")
-    
+            print(f"⚠️  Please enter a number between 1 and {len(channels)}{prompt_suffix}")
+
     # Initialize components with paths relative to project root
     print("\n⚙️  Initializing components...")
-    fetcher = SlackFetcher(token=config["slack_token"])
-    cache = UserCache(cache_file=str(PROJECT_ROOT / "user_cache.json"))
+    fetcher = DemoFetcher() if DEMO_MODE else SlackFetcher(token=config["slack_token"])
+    cache = UserCache(cache_file=user_cache_file)
     exporter = DataExporter(export_dir=str(PROJECT_ROOT / "exports"))
     
     # Get date range from user
@@ -145,9 +159,10 @@ def main():
         print(f"\n🔍 Fetching messages from {start_date} to {end_date}...")
         messages = fetcher.fetch_messages_in_range(channel_id, start_date, end_date)
     
-    # Update user cache
-    print("👥 Updating user cache...")
-    cache.update_from_messages(fetcher.client, messages)
+    # Update user cache (skipped in demo mode — sample_user_map is pre-populated)
+    if not DEMO_MODE:
+        print("👥 Updating user cache...")
+        cache.update_from_messages(fetcher.client, messages)
     user_map = cache.get_map()
     
     # Sort messages based on user preference

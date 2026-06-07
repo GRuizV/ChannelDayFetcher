@@ -4,6 +4,19 @@ A lightweight Python tool to fetch, view, and export Slack channel messages for 
 
 Originally built to satisfy a real need: pulling all of a single day's conversation out of a Slack channel into a clean, exportable artifact (CSV or JSON) — including threaded replies, file attachments, and human-readable user names — without manually scrolling through Slack.
 
+## Try the demo
+
+A public demo is deployed on Streamlit Cloud — it serves a baked sample conversation (no live Slack token attached), so you can see the full UI, exports, and threading behaviour without setting anything up. **(Live URL will be added after deployment.)**
+
+To run the demo locally instead:
+
+```bash
+DEMO_MODE=true streamlit run ui.py     # macOS / Linux
+$env:DEMO_MODE="true"; streamlit run ui.py     # Windows PowerShell
+```
+
+To run against your own Slack workspace, follow the [Setup](#setup) section below.
+
 ---
 
 ## What it does

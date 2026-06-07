@@ -1,0 +1,249 @@
+[
+  {
+    "id": "g001",
+    "user": "U_DEMO_CASEY",
+    "text": "Morning team — quick reminder we're doing the planning sync at 2pm today. Bring whatever you've got on the Q3 priorities doc. :coffee:",
+    "days_ago": 0,
+    "time_of_day": "08:42:00",
+    "replies": [
+      {"user": "U_DEMO_ALEX", "text": "On it, will have a draft ready by then"},
+      {"user": "U_DEMO_SAM", "text": "Same. Can we also block 10 mins at the end for the onboarding feedback?"},
+      {"user": "U_DEMO_CASEY", "text": "Yep, added to the agenda"}
+    ]
+  },
+  {
+    "id": "g002",
+    "user": "U_DEMO_JORDAN",
+    "text": "Anyone else getting a weird flash of unstyled content on the marketing page first load? Repro: clear cache, hit `/pricing`",
+    "days_ago": 0,
+    "time_of_day": "11:15:00",
+    "replies": [
+      {"user": "U_DEMO_RILEY", "text": "yeah saw that yesterday too. Filed it as a P2"},
+      {"user": "U_DEMO_JORDAN", "text": "ah great, thx"}
+    ]
+  },
+  {
+    "id": "g003",
+    "user": "U_DEMO_ALEX",
+    "text": "Lunch order going in at 12:30 — anyone want anything from the place across the street? :hamburger:",
+    "days_ago": 0,
+    "time_of_day": "12:02:00"
+  },
+  {
+    "id": "g004",
+    "user": "U_DEMO_SAM",
+    "text": "Folks — the new pricing experiment goes live tomorrow at 9am. Heads up in case anyone sees weird metrics.",
+    "days_ago": 1,
+    "time_of_day": "16:30:00",
+    "replies": [
+      {"user": "U_DEMO_DEVI", "text": "Got it. I'll keep an eye on the conversion funnel"}
+    ]
+  },
+  {
+    "id": "g005",
+    "user": "U_DEMO_RILEY",
+    "text": "PSA: the staging DB will be down 7-7:30am tomorrow for a quick maintenance window. Won't affect prod.",
+    "days_ago": 1,
+    "time_of_day": "17:45:00"
+  },
+  {
+    "id": "g006",
+    "user": "U_DEMO_JORDAN",
+    "text": "Sharing the updated brand guidelines draft — feedback by Friday would be great",
+    "days_ago": 2,
+    "time_of_day": "10:20:00",
+    "file_attachments": [
+      {
+        "name": "brand_guidelines_v2.pdf",
+        "mimetype": "application/pdf",
+        "url": "https://raw.githubusercontent.com/GRuizV/ChannelDayFetcher/main/demo/assets/brand_guidelines_v2.svg"
+      }
+    ],
+    "replies": [
+      {"user": "U_DEMO_CASEY", "text": "I'll review this afternoon"},
+      {"user": "U_DEMO_SAM", "text": "Section 4 is *chef's kiss*"}
+    ]
+  },
+  {
+    "id": "g007",
+    "user": "U_DEMO_DEVI",
+    "text": "Great talk from the meetup last night, recording is up: <https://example.com/talks/scaling-postgres>",
+    "days_ago": 2,
+    "time_of_day": "09:10:00"
+  },
+  {
+    "id": "g008",
+    "user": "U_DEMO_ALEX",
+    "text": "Heads up — I'll be out Friday afternoon. Will be back Monday. :palm_tree:",
+    "days_ago": 3,
+    "time_of_day": "11:00:00"
+  },
+  {
+    "id": "g009",
+    "user": "U_DEMO_CASEY",
+    "text": "Reminder: please update your weekly status doc before EOD Friday. We use these to put together the Monday update.",
+    "days_ago": 4,
+    "time_of_day": "08:30:00",
+    "replies": [
+      {"user": "U_DEMO_RILEY", "text": "Mine's already up"}
+    ]
+  },
+  {
+    "id": "g010",
+    "user": "U_DEMO_SAM",
+    "text": "Made a meme to celebrate hitting 1k users this week :tada:",
+    "days_ago": 5,
+    "time_of_day": "14:22:00",
+    "file_attachments": [
+      {
+        "name": "1k_users_meme.png",
+        "mimetype": "image/svg+xml",
+        "url": "https://raw.githubusercontent.com/GRuizV/ChannelDayFetcher/main/demo/assets/1k_users_celebration.svg"
+      }
+    ],
+    "replies": [
+      {"user": "U_DEMO_JORDAN", "text": ":fire:"},
+      {"user": "U_DEMO_CASEY", "text": "Onwards"},
+      {"user": "U_DEMO_DEVI", "text": "Saving this for the all-hands"}
+    ]
+  },
+  {
+    "id": "g011",
+    "user": "U_DEMO_JORDAN",
+    "text": "New office plant has been named: *Photosynthia*. She's by the kitchen.",
+    "days_ago": 5,
+    "time_of_day": "16:00:00"
+  },
+  {
+    "id": "g012",
+    "user": "U_DEMO_ALEX",
+    "text": "Quick question for anyone who's used `pyproject.toml`-based packaging recently — does it play well with editable installs in 3.12?",
+    "days_ago": 6,
+    "time_of_day": "10:45:00",
+    "replies": [
+      {"user": "U_DEMO_RILEY", "text": "Yeah, but make sure you've got `pip>=23.1` and the right build backend"},
+      {"user": "U_DEMO_ALEX", "text": "Got it, thanks!"}
+    ]
+  },
+  {
+    "id": "g013",
+    "user": "U_DEMO_CASEY",
+    "text": "Team offsite is locked in for the third week of next month — calendar invites will go out today.",
+    "days_ago": 7,
+    "time_of_day": "13:30:00"
+  },
+  {
+    "id": "g014",
+    "user": "U_DEMO_DEVI",
+    "text": "If anyone's in the office Friday, I'm bringing donuts :doughnut:",
+    "days_ago": 9,
+    "time_of_day": "08:15:00"
+  },
+  {
+    "id": "g015",
+    "user": "U_DEMO_SAM",
+    "text": "Sharing the customer feedback summary from this week — overall positive, two pain points around onboarding and one around the export flow.",
+    "days_ago": 10,
+    "time_of_day": "15:50:00",
+    "replies": [
+      {"user": "U_DEMO_JORDAN", "text": "The onboarding one matches what I saw in the usability tests"},
+      {"user": "U_DEMO_CASEY", "text": "Let's add it to next week's priorities"}
+    ]
+  },
+  {
+    "id": "g016",
+    "user": "U_DEMO_RILEY",
+    "text": "DNS migration done. New domain is live, old one redirects. Holler if anything breaks.",
+    "days_ago": 12,
+    "time_of_day": "11:30:00"
+  },
+  {
+    "id": "g017",
+    "user": "U_DEMO_ALEX",
+    "text": "Anyone got a recommendation for a decent time-series DB? Looking at TimescaleDB vs. InfluxDB.",
+    "days_ago": 14,
+    "time_of_day": "10:00:00",
+    "replies": [
+      {"user": "U_DEMO_DEVI", "text": "Timescale if you already know Postgres. Way less learning curve."},
+      {"user": "U_DEMO_RILEY", "text": "+1 to that. We use it for the metrics pipeline."}
+    ]
+  },
+  {
+    "id": "g018",
+    "user": "U_DEMO_CASEY",
+    "text": "Welcome to *Devi*! She joins us as a senior engineer starting today. Looking forward to having her on the team :wave:",
+    "days_ago": 17,
+    "time_of_day": "09:00:00",
+    "replies": [
+      {"user": "U_DEMO_DEVI", "text": "Excited to be here! Thanks everyone"},
+      {"user": "U_DEMO_JORDAN", "text": "Welcome aboard :tada:"}
+    ]
+  },
+  {
+    "id": "g019",
+    "user": "U_DEMO_SAM",
+    "text": "Quarterly survey results are in — happiness score up 12 points from last quarter. Full write-up in the docs.",
+    "days_ago": 20,
+    "time_of_day": "14:00:00"
+  },
+  {
+    "id": "g020",
+    "user": "U_DEMO_JORDAN",
+    "text": "Sneak peek of the redesigned dashboard. Still iterating but wanted to share early :art:",
+    "days_ago": 23,
+    "time_of_day": "16:45:00",
+    "file_attachments": [
+      {
+        "name": "dashboard_redesign_wip.png",
+        "mimetype": "image/svg+xml",
+        "url": "https://raw.githubusercontent.com/GRuizV/ChannelDayFetcher/main/demo/assets/dashboard_redesign_wip.svg"
+      }
+    ],
+    "replies": [
+      {"user": "U_DEMO_ALEX", "text": "Love the new sidebar"},
+      {"user": "U_DEMO_CASEY", "text": "Cleaner. Let's user-test the navigation"}
+    ]
+  },
+  {
+    "id": "g021",
+    "user": "U_DEMO_RILEY",
+    "text": "Just merged the long-running infra branch. ~30% reduction in p99 latency on the API. :rocket:",
+    "days_ago": 28,
+    "time_of_day": "12:30:00",
+    "replies": [
+      {"user": "U_DEMO_CASEY", "text": "Huge"},
+      {"user": "U_DEMO_ALEX", "text": "Nice work"}
+    ]
+  },
+  {
+    "id": "g022",
+    "user": "U_DEMO_CASEY",
+    "text": "Just finished the board update. TL;DR: revenue on track, two new pilot customers signed, hiring open for one more engineer.",
+    "days_ago": 35,
+    "time_of_day": "18:10:00"
+  },
+  {
+    "id": "g023",
+    "user": "U_DEMO_DEVI",
+    "text": "First week wrap-up: codebase is in a great shape, docs are surprisingly good, and I've already shipped one PR. Loving it.",
+    "days_ago": 45,
+    "time_of_day": "17:00:00"
+  },
+  {
+    "id": "g024",
+    "user": "U_DEMO_SAM",
+    "text": "Kicking off the planning cycle for next quarter. Theme: less features, more polish.",
+    "days_ago": 60,
+    "time_of_day": "10:00:00",
+    "replies": [
+      {"user": "U_DEMO_JORDAN", "text": ":raised_hands:"}
+    ]
+  },
+  {
+    "id": "g025",
+    "user": "U_DEMO_CASEY",
+    "text": "First-ever post in this channel. Welcome everyone — let's build something we're proud of :sparkles:",
+    "days_ago": 89,
+    "time_of_day": "09:30:00"
+  }
+]

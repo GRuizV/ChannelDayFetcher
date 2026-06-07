@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" font-family="system-ui, -apple-system, sans-serif">
+  <rect width="800" height="600" fill="#fafafa"/>
+  <rect x="40" y="40" width="720" height="520" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="80" y="100" font-size="28" font-weight="700" fill="#111827">Brand Guidelines v2</text>
+  <text x="80" y="130" font-size="14" fill="#6b7280">Demo asset — placeholder for portfolio</text>
+  <line x1="80" y1="160" x2="720" y2="160" stroke="#e5e7eb"/>
+  <text x="80" y="200" font-size="16" font-weight="600" fill="#111827">Colors</text>
+  <rect x="80" y="220" width="80" height="60" fill="#1f77b4"/>
+  <rect x="170" y="220" width="80" height="60" fill="#111827"/>
+  <rect x="260" y="220" width="80" height="60" fill="#f59e0b"/>
+  <rect x="350" y="220" width="80" height="60" fill="#10b981"/>
+  <text x="80" y="330" font-size="16" font-weight="600" fill="#111827">Typography</text>
+  <text x="80" y="365" font-size="32" fill="#111827">Aa Bb Cc 123</text>
+  <text x="80" y="395" font-size="13" fill="#6b7280">Inter / Regular &amp; Bold</text>
+  <text x="80" y="450" font-size="16" font-weight="600" fill="#111827">Voice</text>
+  <text x="80" y="478" font-size="14" fill="#374151">Direct. Friendly. Specific.</text>
+</svg>

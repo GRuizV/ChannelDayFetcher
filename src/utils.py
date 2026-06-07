@@ -17,23 +17,33 @@ PROJECT_ROOT = Path(__file__).parent.parent
 load_dotenv(PROJECT_ROOT / ".env")
 
 
-def load_config() -> dict[str, str]:
+def is_demo_mode() -> bool:
+    """True when DEMO_MODE env var is set. Used by entry points to swap in DemoFetcher."""
+    return os.getenv("DEMO_MODE", "").lower() == "true"
+
+
+def load_config() -> dict:
     """
     Load configuration from environment variables.
-    
+
     Supports:
     - .env file (local development - auto-loaded)
     - Environment variables (production deployment)
     - Streamlit secrets (Streamlit Cloud)
-    
+
+    In demo mode (DEMO_MODE=true), SLACK_TOKEN is not required.
+
     Returns:
         Dictionary with configuration values
-        
+
     Raises:
-        ValueError: If SLACK_TOKEN is not found
+        ValueError: If SLACK_TOKEN is not found and demo mode is not enabled
     """
+    if is_demo_mode():
+        return {"slack_token": None, "demo_mode": True}
+
     slack_token = os.getenv("SLACK_TOKEN")
-    
+
     if not slack_token:
         raise ValueError(
             "❌ SLACK_TOKEN not found!\n\n"
@@ -41,10 +51,11 @@ def load_config() -> dict[str, str]:
             "  1. Copy env.example to .env\n"
             "  2. Add your token: SLACK_TOKEN=xoxb-your-token\n\n"
             "For deployment:\n"
-            "  Set SLACK_TOKEN as environment variable in your platform"
+            "  Set SLACK_TOKEN as environment variable in your platform\n\n"
+            "Or, to run against the baked demo dataset: set DEMO_MODE=true"
         )
-    
-    return {"slack_token": slack_token}
+
+    return {"slack_token": slack_token, "demo_mode": False}
 
 
 def validate_date_range(start_date: str, end_date: str) -> tuple[str, str]:

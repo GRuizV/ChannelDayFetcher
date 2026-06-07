@@ -23,11 +23,16 @@ Example:
 from datetime import datetime
 from pathlib import Path
 from slack_sdk import WebClient
-from src import SlackFetcher, UserCache, ChannelCache, DataExporter, load_config
+from src import (
+    SlackFetcher, DemoFetcher,
+    UserCache, ChannelCache, DataExporter,
+    load_config, is_demo_mode,
+)
 
 
 # Get the project root directory (where this file is located)
 PROJECT_ROOT = Path(__file__).parent
+DEMO_MODE = is_demo_mode()
 
 
 def fetch_and_export(
@@ -39,32 +44,37 @@ def fetch_and_export(
 ) -> dict:
     """
     High-level function to fetch messages and export them.
-    
+
     Args:
         channel_id: Slack channel ID
         start_date: Start date (YYYY-MM-DD)
         end_date: End date (YYYY-MM-DD)
         export_json: Whether to export as JSON
         export_csv: Whether to export as CSV
-        
+
     Returns:
         Dictionary with messages, user_map, and export paths
     """
-    # Load configuration (uses default location: PROJECT_ROOT/config.json)
     config = load_config()
-    
-    # Initialize components with paths relative to project root
-    fetcher = SlackFetcher(token=config["slack_token"])
-    cache = UserCache(cache_file=str(PROJECT_ROOT / "user_cache.json"))
+
+    if DEMO_MODE:
+        fetcher = DemoFetcher()
+        user_cache_file = str(PROJECT_ROOT / "demo" / "sample_user_map.json")
+    else:
+        fetcher = SlackFetcher(token=config["slack_token"])
+        user_cache_file = str(PROJECT_ROOT / "user_cache.json")
+
+    cache = UserCache(cache_file=user_cache_file)
     exporter = DataExporter(export_dir=str(PROJECT_ROOT / "exports"))
-    
+
     # Fetch messages (already filtered for relevance)
     print(f"🔍 Fetching messages from {start_date} to {end_date}...")
     messages = fetcher.fetch_messages_in_range(channel_id, start_date, end_date)
-    
-    # Update user cache
-    print("👥 Updating user cache...")
-    cache.update_from_messages(fetcher.client, messages)
+
+    # Update user cache (skipped in demo mode — sample_user_map is pre-populated)
+    if not DEMO_MODE:
+        print("👥 Updating user cache...")
+        cache.update_from_messages(fetcher.client, messages)
     user_map = cache.get_map()
     
     print(f"✅ Found {len(messages)} relevant messages")
@@ -92,20 +102,22 @@ def main():
     Example usage - customize as needed.
     For interactive CLI, use: python cli.py
     """
-    # Configuration
-    config = load_config()
-    slack_client = WebClient(token=config["slack_token"])
-    
-    # Get first available channel from cache
-    channel_cache = ChannelCache(cache_file=str(PROJECT_ROOT / "channel_cache.json"))
+    load_config()  # validate environment
+
+    # Get first available channel from the appropriate cache for the current mode
+    if DEMO_MODE:
+        channel_cache = ChannelCache(cache_file=str(PROJECT_ROOT / "demo" / "sample_channel_cache.json"))
+    else:
+        channel_cache = ChannelCache(cache_file=str(PROJECT_ROOT / "channel_cache.json"))
     channel_id = channel_cache.get_first_channel_id()
-    
+
     if not channel_id:
         print("⚠️ No channels found. Please run cli.py to refresh channels.")
         return
-    
-    start_date = "2025-10-22"
-    end_date = "2025-10-23"
+
+    today = datetime.today().strftime("%Y-%m-%d")
+    start_date = today
+    end_date = today
     
     # Fetch and export
     result = fetch_and_export(
