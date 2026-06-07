@@ -35,8 +35,30 @@ DEMO_MODE = is_demo_mode()
 
 # Simulated-latency range for demo mode — makes the local-disk reads feel
 # like a real Slack API roundtrip and gives Streamlit Cloud cold-start
-# something to hide behind.
-DEMO_DELAY_RANGE = (3.5, 5.5)
+# something to hide behind. Range calibrated against actual day-to-day
+# experience using the original tool internally.
+DEMO_DELAY_RANGE = (5.0, 9.0)
+
+# Sidebar widget keys that get cleared back to defaults whenever:
+#   - the channel list is refreshed
+#   - the Reset button is clicked
+#   - a fetch completes
+# This forces a "fresh choices" interaction every time, instead of carrying
+# stale filter/sort/export state across runs.
+WIDGET_RESET_KEYS = [
+    "start_date_widget", "end_date_widget",
+    "sort_order_widget", "show_timestamps_widget",
+    "filter_mode_widget", "filter_user_widget",
+    "export_csv_widget", "export_json_widget",
+    "applied_filter_mode", "applied_filter_user_id",
+]
+
+
+def reset_widget_state():
+    """Clear sidebar widget state so the next render falls back to defaults."""
+    for key in WIDGET_RESET_KEYS:
+        if key in st.session_state:
+            del st.session_state[key]
 
 # Initialize Streamlit page
 st.set_page_config(page_title="Slack Channel Fetcher", layout="wide")
@@ -80,6 +102,11 @@ st.sidebar.header("🔧 Configuration")
 # Channel Cache and Selection
 channel_cache = ChannelCache(cache_file=CHANNEL_CACHE_FILE)
 
+# In demo mode the runtime cache file doesn't exist on disk, so we use session
+# state to remember that channels have been "loaded" via the refresh button.
+if DEMO_MODE and "demo_channel_map" in st.session_state:
+    channel_cache.channel_map = st.session_state["demo_channel_map"]
+
 # Refresh channels button. In demo mode it simulates the API roundtrip with a
 # 3.5-5.5s delay and then loads the static channel list from disk.
 col_refresh1, col_refresh2 = st.sidebar.columns([3, 1])
@@ -89,9 +116,12 @@ with col_refresh2:
             if DEMO_MODE:
                 time.sleep(random.uniform(*DEMO_DELAY_RANGE))
                 with open(DEMO_CHANNEL_SOURCE, encoding="utf-8") as f:
-                    channel_cache.channel_map = json.load(f)
+                    loaded = json.load(f)
+                st.session_state["demo_channel_map"] = loaded
+                channel_cache.channel_map = loaded
             else:
                 channel_cache.refresh_channels(slack_client)
+        reset_widget_state()
         st.rerun()
 
 # Get channel list
@@ -130,8 +160,8 @@ st.sidebar.markdown("---")
 # --- Date Range Section ---
 st.sidebar.subheader("📅 Custom Date Range")
 col1, col2 = st.sidebar.columns(2)
-start_date = col1.date_input("Start date", value=date.today())
-end_date = col2.date_input("End date", value=date.today())
+start_date = col1.date_input("Start date", value=date.today(), key="start_date_widget")
+end_date = col2.date_input("End date", value=date.today(), key="end_date_widget")
 
 fetch_range_btn = st.sidebar.button(
     "Fetch Range", 
@@ -147,9 +177,13 @@ sort_order = st.sidebar.radio(
     "Message Order",
     options=["Oldest First (Chronological)", "Newest First (Reverse)"],
     index=0,  # Default to chronological (oldest first)
-    help="Choose how messages are displayed"
+    help="Choose how messages are displayed",
+    key="sort_order_widget",
 )
-show_timestamps = st.sidebar.checkbox("Show Timestamps", value=True, help="Display message timestamps")
+show_timestamps = st.sidebar.checkbox(
+    "Show Timestamps", value=True, help="Display message timestamps",
+    key="show_timestamps_widget",
+)
 
 
 st.sidebar.markdown("---")
@@ -157,11 +191,21 @@ st.sidebar.markdown("---")
 # --- Filter Section ---
 st.sidebar.subheader("🔎 Filter")
 
-# Build the user list from whatever's currently known: session state if a fetch
-# has happened, else fall back to the on-disk user cache. In demo mode this
-# means the six sample users are available immediately.
-_filter_user_map = st.session_state.get("user_map") or UserCache(cache_file=USER_CACHE_FILE).get_map()
-_filter_user_names = sorted(_filter_user_map.values()) if _filter_user_map else []
+# Build two distinct user-id sets from the currently displayed messages:
+#   - _author_user_ids  → only users who STARTED a top-level message
+#   - _includes_user_ids → anyone who appears anywhere (parent or reply)
+# The dropdown then shows the appropriate set based on the chosen filter mode.
+_fetched_messages = st.session_state.get("messages") or []
+_session_user_map = st.session_state.get("user_map") or {}
+_author_user_ids = set()
+_includes_user_ids = set()
+for _m in _fetched_messages:
+    if _m.get("user"):
+        _author_user_ids.add(_m["user"])
+        _includes_user_ids.add(_m["user"])
+    for _r in _m.get("replies", []):
+        if _r.get("user"):
+            _includes_user_ids.add(_r["user"])
 
 filter_mode = st.sidebar.radio(
     "Filter mode",
@@ -171,24 +215,46 @@ filter_mode = st.sidebar.radio(
         "Author: only top-level messages started by the selected user.\n\n"
         "Includes: any thread where the selected user appears (parent or any reply)."
     ),
+    key="filter_mode_widget",
 )
 
+if filter_mode == "Author":
+    _filter_user_ids = _author_user_ids
+elif filter_mode == "Includes":
+    _filter_user_ids = _includes_user_ids
+else:
+    _filter_user_ids = set()
+
+_filter_user_map = {uid: _session_user_map.get(uid, uid) for uid in _filter_user_ids}
+_filter_user_names = sorted(_filter_user_map.values())
+
+# DRAFT state: what the widgets currently say. Doesn't take effect until Apply.
 selected_filter_user_id = None
 if filter_mode != "None":
     if _filter_user_names:
-        selected_user_name = st.sidebar.selectbox("User", options=_filter_user_names)
+        selected_user_name = st.sidebar.selectbox(
+            "User", options=_filter_user_names, key="filter_user_widget",
+        )
         selected_filter_user_id = next(
             (uid for uid, name in _filter_user_map.items() if name == selected_user_name),
             None,
         )
     else:
-        st.sidebar.info("Fetch some messages first to populate the user list.")
+        st.sidebar.info("Fetch some messages first — the filter list is built from whoever appears in the fetched batch.")
+
+# Apply button — commits the current draft into the APPLIED state used at
+# display + export time. Hidden until there are messages to filter against.
+if _fetched_messages:
+    if st.sidebar.button("Apply Filter", use_container_width=True):
+        st.session_state["applied_filter_mode"] = filter_mode
+        st.session_state["applied_filter_user_id"] = selected_filter_user_id
+        st.rerun()
 
 st.sidebar.markdown("---")
 
 # --- Export Section ---
-export_csv = st.sidebar.checkbox("Export to CSV", value=True)
-export_json = st.sidebar.checkbox("Export to JSON", value=False)
+export_csv = st.sidebar.checkbox("Export to CSV", value=False, key="export_csv_widget")
+export_json = st.sidebar.checkbox("Export to JSON", value=False, key="export_json_widget")
 
 
 def apply_filter(msgs: list[dict], mode: str, user_id: str | None) -> list[dict]:
@@ -217,11 +283,16 @@ col_reset, col_spacer = st.columns([1, 5])
 with col_reset:
     if st.button("🔄 Reset", help="Clear results and start fresh", use_container_width=True):
         logger.info("User clicked reset button - clearing session state")
-        # Clear all message-related session state
-        keys_to_clear = ['messages_fetched', 'messages', 'user_map', 'start_str', 'end_str', 'sort_emoji', 'sort_order']
+        # Clear all message-related session state (also clears the demo channel
+        # map so the dropdown goes back to empty until 🔄 is clicked again).
+        keys_to_clear = [
+            'messages_fetched', 'messages', 'user_map', 'start_str', 'end_str',
+            'sort_emoji', 'sort_order', 'demo_channel_map', 'last_fetch_summary',
+        ]
         for key in keys_to_clear:
             if key in st.session_state:
                 del st.session_state[key]
+        reset_widget_state()
         st.rerun()
 
 # Instructions - always visible, but expand/collapse based on state
@@ -301,17 +372,21 @@ if (fetch_today_btn or fetch_range_btn) and channel_id:
     st.session_state.end_str = end_str
     st.session_state.sort_emoji = sort_emoji
     st.session_state.sort_order = sort_order
-    
-    st.success(f"✅ Retrieved {len(messages)} relevant messages between {start_str} and {end_str}.")
-    
-    # Check if messages exist
-    if len(messages) == 0:
-        st.warning("📭 No messages found for this date range.")
-        st.info("💡 Try a different date range or check if there are messages in the selected channel.")
-    else:
-        st.info(f"{sort_emoji} Displaying messages: **{sort_order}**")
-    
-    st.divider()
+    # Summary banner is rendered post-rerun from this session-state entry,
+    # because the widgets are about to be reset and the action block won't
+    # have a chance to show them otherwise.
+    st.session_state["last_fetch_summary"] = {
+        "count": len(messages),
+        "start": start_str,
+        "end": end_str,
+        "sort_label": sort_order,
+        "sort_emoji": sort_emoji,
+    }
+
+    # Reset post-process widgets so the next interaction starts from defaults
+    # (no carry-over of stale filter/sort/export state from the previous run).
+    reset_widget_state()
+    st.rerun()
 
 # ==============================
 # DISPLAY AND EXPORT (from session state)
@@ -322,16 +397,31 @@ if 'messages' in st.session_state and st.session_state.messages_fetched:
     user_map = st.session_state.user_map
     start_str = st.session_state.start_str
     end_str = st.session_state.end_str
-    sort_emoji = st.session_state.get('sort_emoji', '⏫')
-    sort_order_stored = st.session_state.get('sort_order', 'Oldest First (Chronological)')
+    summary = st.session_state.get("last_fetch_summary", {})
+    sort_emoji = summary.get("sort_emoji", st.session_state.get('sort_emoji', '⏫'))
+    sort_label = summary.get("sort_label", st.session_state.get('sort_order', 'Oldest First (Chronological)'))
 
-    # Apply Author/Includes filter to both display AND exports
-    messages = apply_filter(raw_messages, filter_mode, selected_filter_user_id)
+    # Post-rerun summary banners (the fetch action resets widgets + reruns,
+    # so the banners can't live in the action block — they live here).
+    st.success(f"✅ Retrieved {len(raw_messages)} relevant messages between {start_str} and {end_str}.")
+    if len(raw_messages) == 0:
+        st.warning("📭 No messages found for this date range.")
+        st.info("💡 Try a different date range or check if there are messages in the selected channel.")
+    else:
+        st.info(f"{sort_emoji} Displaying messages: **{sort_label}**")
+    st.divider()
 
-    if filter_mode != "None" and selected_filter_user_id:
-        filter_user_name = user_map.get(selected_filter_user_id, selected_filter_user_id)
+    # Apply Author/Includes filter using the APPLIED state (from session state),
+    # not the current draft widget values. Filter only takes effect after the
+    # "Apply Filter" sidebar button is clicked.
+    applied_mode = st.session_state.get("applied_filter_mode", "None")
+    applied_user_id = st.session_state.get("applied_filter_user_id")
+    messages = apply_filter(raw_messages, applied_mode, applied_user_id)
+
+    if applied_mode != "None" and applied_user_id:
+        filter_user_name = user_map.get(applied_user_id, applied_user_id)
         st.info(
-            f"🔎 Filter active — **{filter_mode}** = `{filter_user_name}` · "
+            f"🔎 Filter active — **{applied_mode}** = `{filter_user_name}` · "
             f"{len(messages)} of {len(raw_messages)} messages shown"
         )
 
@@ -410,3 +500,11 @@ if 'messages' in st.session_state and st.session_state.messages_fetched:
                 mime="text/csv",
                 key="download_csv"  # Unique key to prevent conflicts
             )
+
+    # Prompt the user to enable an export if neither is currently selected.
+    # Both export checkboxes default to False after every fetch, so this
+    # banner appears each time messages are first rendered until the user
+    # opts in. Uses st.info (blue) to match the existing "Displaying messages"
+    # banner style.
+    if messages and not export_csv and not export_json:
+        st.info("💡 Tick **Export to CSV** or **Export to JSON** in the sidebar to enable a download.")
