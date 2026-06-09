@@ -6,7 +6,11 @@ Originally built to satisfy a real need: pulling all of a single day's conversat
 
 ## Try the demo
 
-A public demo is deployed on Streamlit Cloud — it serves a baked sample conversation (no live Slack token attached), so you can see the full UI, exports, and threading behaviour without setting anything up. **(Live URL will be added after deployment.)**
+**Live demo:** <https://channeldayfetcher-grv.streamlit.app/>
+
+The deployed app serves a baked sample conversation (no live Slack token attached), so you can see the full UI, threading, filtering, and export behaviour without setting anything up. The dataset is regenerated against today's date on every load, so the demo never goes stale.
+
+Note: Streamlit Cloud's free tier idles the app after inactivity, so the first visit may take ~10s to wake up.
 
 To run the demo locally instead:
 

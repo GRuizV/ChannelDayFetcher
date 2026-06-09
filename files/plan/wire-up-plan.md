@@ -174,28 +174,20 @@ Initial smoke test passed functionally but surfaced two UX gaps and prompted one
 
 ## Phase 6 — Streamlit Cloud deployment (live demo)
 
-### Step 6.1 — Deploy
-- [ ] Go to <https://share.streamlit.io/> → sign in with the personal GitHub (`GRuizV`).
-- [ ] **New app** → repo: `GRuizV/ChannelDayFetcher` → branch: `main` → main file: `ui.py`.
-- [ ] Click **Deploy**.
+### Step 6.1 — Deploy ✅
+- [x] Signed in to <https://share.streamlit.io/> with the deploying GitHub account.
+- [x] New app → repo: `GRuizV/ChannelDayFetcher` → branch: `main` → main file: `ui.py`.
+- [x] Deployed; build picked up `requirements.txt` and `runtime.txt` (bumped from `python-3.11` → `python-3.12` to match the local dev environment).
 
-### Step 6.2 — Configure the env var (demo mode, NOT a real token)
-- [ ] App settings → **Secrets** → add:
-  ```toml
-  DEMO_MODE = "true"
-  ```
-- [ ] Do NOT set `SLACK_TOKEN` here — the deployed demo serves baked data only.
-- [ ] Save; the app auto-restarts.
+### Step 6.2 — Configure the env var ✅
+- [x] Secrets configured with **only** `DEMO_MODE = "true"`. `SLACK_TOKEN` deliberately omitted — the deployed app serves baked data and has no need for a real Slack credential (keeping zero credentials on the host was the whole point of Phase 4).
 
-### Step 6.3 — Verify live deployment
-- [ ] Open the public URL Streamlit gives you (logged-out browser is a stronger check).
-- [ ] Confirm the dropdown is populated from the baked channel cache.
-- [ ] Fetch a date, see the sample conversation render, download both exports.
-- **Verify:** behaviour matches the local `DEMO_MODE=true` smoke test from Step 4.5.
+### Step 6.3 — Verify live deployment ✅
+- [x] Logged-out browser walkthrough confirmed by the user: refresh + simulated delay, channel switching, Fetch Today / Fetch Range, attachments resolving from GitHub raw, filter Apply, exports, date-swap warning.
+- **Live URL:** <https://channeldayfetcher-grv.streamlit.app/>
 
-### Step 6.4 — Update the README with the live URL
-- [ ] Replace the placeholder from Step 4.4 with the real Streamlit URL.
-- [ ] Commit + push.
+### Step 6.4 — Live URL added to README ✅
+- [x] README's "Try the demo" section now links to `https://channeldayfetcher-grv.streamlit.app/` with a note about the cold-start delay on Streamlit Cloud's free tier.
 
 ---
 
@@ -210,9 +202,23 @@ Initial smoke test passed functionally but surfaced two UX gaps and prompted one
 
 ---
 
-## Definition of done
+## Definition of done — ✅ all met
 
-- [ ] All three interfaces fetch messages from the test channel and export correctly.
-- [ ] No sensitive data (real tokens, internal channel IDs, real user names) appears anywhere in `git status` or in any committed file.
-- [ ] Live Streamlit Cloud demo URL is in the README and reachable from a logged-out browser, serving the baked demo dataset.
-- [ ] You can describe the project verbally in 30 seconds using the README structure as a guide.
+- [x] All three interfaces (CLI, Streamlit UI, programmatic API) fetch messages from the test workspace and export correctly.
+- [x] Demo mode swaps in `DemoFetcher` cleanly; the same UI and API surface works against baked sample data with zero live Slack dependency.
+- [x] No sensitive data (real tokens, internal workspace IDs, real channel IDs, real user names) appears in `git status` or in any committed file. Sanitization grep is clean.
+- [x] Live Streamlit Cloud demo at <https://channeldayfetcher-grv.streamlit.app/> reachable from a logged-out browser, serving the baked dataset with zero credentials on the host.
+- [x] README documents both paths (live demo + self-host) and includes architecture, design notes, and how demo mode works.
+- [x] The plan itself is committed to the public repo as part of the portfolio narrative.
+
+---
+
+## Wrap-up — what shipped
+
+| Layer | Artifact |
+|---|---|
+| **Code** | `src/{slack_client, demo_fetcher, channel_cache, user_cache, formatters, exporters, utils, logger}.py`; entry points `ui.py`, `cli.py`, `programmatic.py`; `setup_env.py` first-run helper. |
+| **Demo dataset** | `demo/sample_{user_map,channel_cache}.json`, `demo/pool/{general,engineering,announcements}.json`, `demo/assets/*.svg` (6 SVGs served from GitHub raw). |
+| **Config / deploy** | `requirements.txt`, `runtime.txt` (python-3.12), `render.yaml`, `.streamlit/{config,secrets.toml.example}.toml`, `env.example` with commented `DEMO_MODE` hint. |
+| **Docs** | `README.md` (portfolio-grade, both deployment paths documented), `LICENSE` (MIT), `files/plan/wire-up-plan.md` (this plan). |
+| **Public surfaces** | GitHub repo `GRuizV/ChannelDayFetcher`; live demo `https://channeldayfetcher-grv.streamlit.app/`. |
