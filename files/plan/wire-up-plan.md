@@ -119,44 +119,56 @@ Initial smoke test passed functionally but surfaced two UX gaps and prompted one
 ### Step 4.6 — UX polish + Author/Includes filter ✅
 
 **Demo-mode UX parity with real mode:**
-- [x] Refresh button now visible in demo mode too. Channel dropdown starts empty until 🔄 is clicked.
-- [x] On refresh in demo mode: a simulated 3.5–5.5s delay (random per click) before the static channel list is loaded from `demo/sample_channel_cache.json`. Same range applies when fetching messages.
-- [x] `DEMO_DELAY_RANGE = (3.5, 5.5)` constant at the top of `ui.py` so this is tweakable in one place.
+- [x] Refresh button visible in demo mode too. Channel dropdown starts empty until 🔄 is clicked.
+- [x] Refresh + fetch in demo mode each take a simulated **5–9s random delay** (calibrated against the user's actual day-to-day experience of the real tool internally). Single constant `DEMO_DELAY_RANGE` at the top of `ui.py` controls both.
+- [x] Demo-mode refresh persistence: loaded channel list is stored in `st.session_state["demo_channel_map"]` so it survives reruns.
 
-**New Author / Includes filter (both modes):**
-- [x] New sidebar section: "Filter mode" radio with `None` / `Author` / `Includes`, plus a "User" dropdown.
-- [x] **Author** = only top-level messages by the selected user.
-- [x] **Includes** = any thread where the selected user appears (parent or any reply). Whole thread is preserved including attachments.
-- [x] Filter applies at display + export time, against the unfiltered messages stored in session state, so changing the filter does NOT require a re-fetch.
-- [x] When a filter is active, an `🔎 Filter active — Author = Alex Chen · 4 of 12 messages shown` banner shows above the message list.
-- [x] User dropdown is populated from session state's user_map if a fetch has happened; otherwise from the on-disk user cache. In demo mode this means all 6 sample users are pickable immediately.
+**Author / Includes filter (both modes):**
+- [x] Sidebar: "Filter mode" radio with `None` / `Author` / `Includes`, then a "User" dropdown, then an **Apply Filter** button. Filter only takes effect after Apply — a stray dropdown change doesn't re-render the whole message list.
+- [x] **Author** = only top-level posts started by the selected user.
+- [x] **Includes** = any thread where the selected user appears (parent or any reply). Whole thread preserved.
+- [x] User dropdown is built **only from users present in the currently fetched batch** (top-level posters for Author mode, anyone for Includes mode). Pre-fetch the dropdown is empty with a hint message. Channel-specific pool composition naturally narrows the list: `#engineering` shows 3 names, `#announcements` shows ~2 main posters.
+- [x] Filter applies at display + export time, so toggling/changing it never triggers a re-fetch.
+- [x] When a filter is active, an `🔎 Filter active — Author = Alex Chen · 4 of 12 messages shown` info banner shows above the message list.
 
-### Step 4.5 (re-test) — Local smoke test of both modes
-- [ ] **Normal mode regression check:** plain `streamlit run ui.py` — channel dropdown still works, filter widget appears in sidebar (populated only after first fetch), filter applied correctly.
-- [ ] **Demo mode:**
-  - `$env:DEMO_MODE="true"; streamlit run ui.py`
-  - 🎬 caption shows; 🔄 button shows; dropdown starts EMPTY.
-  - Click 🔄 → ~4s spinner → three demo channels appear.
-  - Fetch Today → ~4s spinner → ~3+3+2 messages across the three channels.
-  - Last-7-day range returns ~12 messages.
-  - Filter: pick "Includes" + "Devi Krishnan" → message list narrows to threads where Devi appears. Counter banner shows "X of Y".
-  - Switch filter to "Author" + same user → narrows further.
-  - CSV/JSON exports reflect the filtered view.
-  - 📎 attachment links: visible in message; opening only works once `main` is pushed to GitHub.
-- [ ] Clear the env var afterwards: `Remove-Item Env:DEMO_MODE`.
+**Widget reset on refresh / Reset / fetch:**
+- [x] Every channel refresh, full Reset, and successful fetch returns all sidebar widgets to defaults: date range → today/today, sort → Oldest First, timestamps → on, filter → None, exports → both off.
+- [x] Implementation: `__reset_widgets_pending__` flag set at the trigger site, consumed at the **top of the next run before any widget mounts** by pre-writing default values into `st.session_state`. Replaces an earlier deletion-based approach that didn't reliably re-render the widgets.
+- [x] Export checkboxes default to **false** (changed from CSV defaulting to true). When neither is selected, a blue prompt banner under the message list invites the user to enable one.
+
+**Date validation surfaced in the UI:**
+- [x] `ui.py` detects `start > end` and `end > today` before calling the fetcher. Warnings get stored in `st.session_state["pending_warnings"]` and rendered once via `st.warning()` at the top of the post-fetch display (then popped so they don't re-appear on subsequent reruns like Apply Filter).
+- [x] Warnings also written to the log at `WARNING` level.
+
+**Quieter logs:**
+- [x] `"Streamlit UI session started"` now logs only on the first run of a Streamlit session (guarded by a session-state flag). Previously fired on every script rerun → dozens of identical lines per visit.
+
+### Step 4.5 (re-test) ✅
+- [x] **Normal mode:** confirmed by user. Channel dropdown still works, filter populated only after fetch, applies on click.
+- [x] **Demo mode:** confirmed by user. Dropdown starts empty; 🔄 loads with simulated delay; fetch has simulated delay; filter dropdown narrows per channel; Apply gates the filter; widgets reset visibly after every interaction; date-swap warning fires; export prompt banner shows when neither is selected.
 
 ---
 
 ## Phase 5 — Cleanup before any public demo
 
-### Step 5.1 — Confirm nothing sensitive landed in the repo
-- [ ] `git status` — only expected changes should be present.
-- [ ] If `exports/`, `user_cache.json`, `channel_cache.json`, or `logs/` show up: confirm they're gitignored (`git check-ignore <file>` should print the path).
-- **Verify:** `.env` is NOT listed in `git status`; `demo/` IS staged and contains only sanitized data.
+### Step 5.1 — Sanitization sweep ✅
+- [x] Grepped the repo for `lilo`, `inn-flow`, internal workspace IDs, real channel IDs, real user IDs, real personal names. Only matches were:
+  - `LICENSE`: "Copyright (c) 2026 Gerardo Ruiz" — intentional, the repo owner's own license.
+- [x] `git status` clean — no `.env`, no real `channel_cache.json`/`user_cache.json`/`exports/`/`logs/` showing up (all gitignored).
+- [x] `demo/base conversations/` (raw, contaminated seed exports) is gitignored — never leaves the local machine.
 
-### Step 5.2 — Commit and push the demo-mode work
-- [ ] Stage and commit the new `demo/`, `src/demo_fetcher.py`, and entry-point edits.
+### Step 5.2 — env.example cleanup ✅
+- [x] `DEMO_MODE = "true"` (which would have force-enabled demo mode for anyone copying `env.example → .env`) replaced with a commented hint:
+  ```
+  # Optional: set DEMO_MODE=true to run against the baked-in sample dataset
+  # instead of a real Slack workspace. When set, SLACK_TOKEN is not required.
+  # DEMO_MODE=true
+  ```
+
+### Step 5.3 — Commit and push
+- [ ] Stage and commit the remaining changes (`env.example`, `ui.py`).
 - [ ] Push to `main`.
+
 
 ---
 

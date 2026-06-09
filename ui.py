@@ -39,26 +39,47 @@ DEMO_MODE = is_demo_mode()
 # experience using the original tool internally.
 DEMO_DELAY_RANGE = (5.0, 9.0)
 
-# Sidebar widget keys that get cleared back to defaults whenever:
-#   - the channel list is refreshed
-#   - the Reset button is clicked
-#   - a fetch completes
-# This forces a "fresh choices" interaction every time, instead of carrying
-# stale filter/sort/export state across runs.
-WIDGET_RESET_KEYS = [
-    "start_date_widget", "end_date_widget",
-    "sort_order_widget", "show_timestamps_widget",
-    "filter_mode_widget", "filter_user_widget",
-    "export_csv_widget", "export_json_widget",
-    "applied_filter_mode", "applied_filter_user_id",
-]
+def _widget_defaults() -> dict:
+    """Default values for the resettable sidebar widgets.
+
+    Recomputed on each call so `date.today()` stays fresh if the app survives
+    midnight.
+    """
+    return {
+        "start_date_widget": date.today(),
+        "end_date_widget": date.today(),
+        "sort_order_widget": "Oldest First (Chronological)",
+        "show_timestamps_widget": True,
+        "filter_mode_widget": "None",
+        "export_csv_widget": False,
+        "export_json_widget": False,
+    }
 
 
 def reset_widget_state():
-    """Clear sidebar widget state so the next render falls back to defaults."""
-    for key in WIDGET_RESET_KEYS:
-        if key in st.session_state:
-            del st.session_state[key]
+    """Schedule a widget-default reset to take effect on the next rerun.
+
+    We do NOT delete keys here — Streamlit treats key deletion as "carry
+    whatever the widget rendered" in some cases, which is why the previous
+    deletion-based approach didn't visibly reset the UI. Instead we set a
+    flag that the script consumes at the top of the next run, BEFORE any
+    widget mounts, writing defaults straight into session_state.
+    """
+    st.session_state["__reset_widgets_pending__"] = True
+    # `applied_filter_*` and `filter_user_widget` aren't covered by the
+    # defaults dict (the filter user dropdown only renders when mode != None,
+    # so it has no sensible default) — clear them explicitly so the applied
+    # filter is dropped and the user picker is empty when mode is "None".
+    for key in ("applied_filter_mode", "applied_filter_user_id", "filter_user_widget"):
+        st.session_state.pop(key, None)
+
+
+# Apply a pending widget reset BEFORE any widget renders. This is the only
+# reliable spot to overwrite widget session state — once a widget has been
+# instantiated, Streamlit forbids touching its key for the rest of the run.
+if st.session_state.pop("__reset_widgets_pending__", False):
+    for key, value in _widget_defaults().items():
+        st.session_state[key] = value
 
 # Initialize Streamlit page
 st.set_page_config(page_title="Slack Channel Fetcher", layout="wide")
@@ -67,8 +88,12 @@ st.title("🗂️​​ Slack Channel Fetcher 🐕‍🦺")
 if DEMO_MODE:
     st.caption("🎬 Demo mode — serving a baked sample conversation. Set `DEMO_MODE=false` and provide a `SLACK_TOKEN` to fetch from a real workspace.")
 
-# Log application start
-logger.info(f"Streamlit UI started (demo_mode={DEMO_MODE})")
+# Log session start once — Streamlit reruns the script on every widget
+# interaction, so unconditional logging here was creating dozens of identical
+# "Streamlit UI started" lines per visit.
+if "_ui_session_started_logged" not in st.session_state:
+    logger.info(f"Streamlit UI session started (demo_mode={DEMO_MODE})")
+    st.session_state["_ui_session_started_logged"] = True
 
 # Load config
 config = load_config()
@@ -327,11 +352,26 @@ st.markdown("---")
 
 if (fetch_today_btn or fetch_range_btn) and channel_id:
 
+    # Detect date issues BEFORE validate_date_range silently corrects them.
+    # Warnings get surfaced in the UI post-rerun via session state.
+    date_warnings = []
+    if fetch_range_btn:
+        if end_date > date.today():
+            date_warnings.append(
+                "⚠️ End date was in the future — capped at today."
+            )
+            logger.warning(f"End date {end_date} was in the future; capped at today.")
+        if start_date > end_date:
+            date_warnings.append(
+                f"⚠️ Start date ({start_date}) was after end date ({end_date}) — dates were swapped automatically."
+            )
+            logger.warning(f"Start date {start_date} > end date {end_date}; swapping.")
+
     # Mark that messages have been fetched
     st.session_state.messages_fetched = True
     st.subheader("📤 Fetching Messages...")
     logger.info(f"User initiated message fetch for channel {channel_id}")
-    
+
     spinner_msg = "Contacting Slack API..." if not DEMO_MODE else "Contacting Slack API..."
     with st.spinner(spinner_msg):
 
@@ -382,6 +422,9 @@ if (fetch_today_btn or fetch_range_btn) and channel_id:
         "sort_label": sort_order,
         "sort_emoji": sort_emoji,
     }
+    # Any date-validation warnings detected above are surfaced once on the
+    # next render, then cleared (st.session_state.pop in the display block).
+    st.session_state["pending_warnings"] = date_warnings
 
     # Reset post-process widgets so the next interaction starts from defaults
     # (no carry-over of stale filter/sort/export state from the previous run).
@@ -400,6 +443,12 @@ if 'messages' in st.session_state and st.session_state.messages_fetched:
     summary = st.session_state.get("last_fetch_summary", {})
     sort_emoji = summary.get("sort_emoji", st.session_state.get('sort_emoji', '⏫'))
     sort_label = summary.get("sort_label", st.session_state.get('sort_order', 'Oldest First (Chronological)'))
+
+    # Render any one-shot warnings raised during the fetch (date swap, future
+    # date cap). `pop` ensures they only show once and don't re-appear on the
+    # next rerun (e.g. when the user clicks Apply Filter later).
+    for _warning in st.session_state.pop("pending_warnings", []):
+        st.warning(_warning)
 
     # Post-rerun summary banners (the fetch action resets widgets + reruns,
     # so the banners can't live in the action block — they live here).

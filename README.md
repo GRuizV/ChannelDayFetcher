@@ -27,7 +27,9 @@ To run against your own Slack workspace, follow the [Setup](#setup) section belo
 - Resolves Slack user IDs to display names (with caching to minimise API calls)
 - Converts Slack's pseudo-markup into standard Markdown
 - Filters out system noise (joins, leaves, pin/unpin notifications, etc.)
-- Exports to **CSV** (UTF-8 BOM for Excel) or **JSON** (full structure with threads + attachments)
+- **Post-fetch filter by user** — narrow the rendered batch to *who* started a message (**Author**) or *who participated* in a thread (**Includes**), with an explicit **Apply** so a stray selection doesn't re-render the whole view
+- Validates dates (warns and swaps if start > end, caps end at today)
+- Exports to **CSV** (UTF-8 BOM for Excel) or **JSON** (full structure with threads + attachments) — the filter applies to exports too
 
 ## Why it's interesting
 
@@ -49,12 +51,22 @@ channeldayfetcher/
 │
 ├── src/                           # Core library
 │   ├── slack_client.py            # SlackFetcher  — paginated history + thread expansion
+│   ├── demo_fetcher.py            # DemoFetcher   — drop-in replacement for the public demo
 │   ├── channel_cache.py           # ChannelCache  — bot-membership channels, persisted to disk
 │   ├── user_cache.py              # UserCache     — user_id → name, persisted to disk
 │   ├── formatters.py              # MessageFormatter — Slack markup → Markdown + relevance filter
 │   ├── exporters.py               # DataExporter  — JSON & CSV (file-based + in-memory)
-│   ├── utils.py                   # Config loading, date validation
+│   ├── utils.py                   # Config loading, date validation, demo-mode helper
 │   └── logger.py                  # Logging setup
+│
+├── demo/                          # Public-demo dataset (read by DemoFetcher when DEMO_MODE=true)
+│   ├── sample_channel_cache.json  # Fake channels for the dropdown
+│   ├── sample_user_map.json       # Fake users for ID → name resolution
+│   ├── pool/                      # Per-channel message pools (days_ago + time_of_day templates)
+│   │   ├── general.json
+│   │   ├── engineering.json
+│   │   └── announcements.json
+│   └── assets/                    # SVG attachments referenced from the pools (served from GitHub raw)
 │
 ├── .streamlit/                    # Streamlit theme + secrets template
 ├── env.example                    # Environment-variable template
@@ -127,6 +139,15 @@ streamlit run ui.py
 
 Open <http://localhost:8501>. Click 🔄 to load channels, pick one, choose **Fetch Today** or a custom date range, and download the result.
 
+The sidebar exposes:
+
+- **Date range / Fetch Today** — what to retrieve.
+- **Display options** — chronological vs. reverse order, timestamps on/off.
+- **Filter** — **Author** (only top-level posts by the chosen user) or **Includes** (any thread the chosen user appears in). The dropdown is populated from users present in *this* fetched batch, and the filter only applies after clicking **Apply Filter** — so a stray pick doesn't re-render the whole view. The filter affects both the rendered output and the exports.
+- **Exports** — pick CSV / JSON to enable download buttons under the message list. Off by default; a blue prompt at the bottom of every batch reminds you to opt in.
+
+After each fetch — and after any channel refresh or full reset — all sidebar choices snap back to defaults so the next interaction is intentional.
+
 ### CLI
 
 ```bash
@@ -158,13 +179,24 @@ Useful for scheduled jobs, data pipelines, or wiring Slack data into downstream 
 
 ## Deployment
 
-The repo is deploy-ready for any Python-friendly platform. Only requirement is to set `SLACK_TOKEN` as an environment variable on the host.
+The repo is deploy-ready for any Python-friendly platform. Two deployment shapes are supported:
+
+- **Real-Slack deployment**: set `SLACK_TOKEN` on the host. The app fetches from your own workspace.
+- **Public-demo deployment**: set `DEMO_MODE=true` and leave `SLACK_TOKEN` unset. The app serves the baked sample conversation from `demo/`. No live Slack credentials live on the host.
 
 | Platform | Config in this repo | Notes |
 |----------|--------------------|-------|
-| **Streamlit Cloud** | `.streamlit/secrets.toml.example` | Easiest free option for Streamlit apps. Set `SLACK_TOKEN` in App Settings → Secrets. |
-| **Render**          | `render.yaml`                    | Free tier available. Set `SLACK_TOKEN` in dashboard. |
+| **Streamlit Cloud** | `.streamlit/secrets.toml.example` | Easiest free option for Streamlit apps. Set `SLACK_TOKEN` (real mode) **or** `DEMO_MODE=true` (public demo) in App Settings → Secrets. |
+| **Render**          | `render.yaml`                    | Free tier available. Set `SLACK_TOKEN` or `DEMO_MODE` in dashboard. |
 | **Heroku / Railway / VPS** | `requirements.txt`, `runtime.txt` | Standard Python deployment; run `streamlit run ui.py --server.port=$PORT --server.address=0.0.0.0`. |
+
+### How demo mode works
+
+When `DEMO_MODE=true`, `ui.py` swaps `SlackFetcher` for `DemoFetcher` and points the channel/user caches at `demo/sample_*.json` instead of the on-disk runtime caches. Each entry in `demo/pool/<channel>.json` is a Slack-shaped message *template* with `days_ago` and `time_of_day` fields; the fetcher rebases those against `datetime.now()` on every call, so today is always today and the demo never ages.
+
+A simulated 5–9 second delay on the "refresh channels" and "fetch messages" actions makes the local-disk reads feel like a real Slack API roundtrip and gives Streamlit Cloud's cold-start something to hide behind.
+
+The dataset is **deterministic** for a given date — refreshing the page or sharing the link on the same day yields the same conversation. The content rotates naturally across the rolling 90-day window without any cron jobs or live workspace dependencies.
 
 ---
 
@@ -179,7 +211,7 @@ The repo is deploy-ready for any Python-friendly platform. Only requirement is t
 ## Future improvements
 
 - Async thread fetching to parallelise heavy retrievals
-- Keyword / user filtering in the UI
+- Keyword search in the UI (user filtering is already in place)
 - Reaction capture in exports
 - Direct-message and group-message support
 - Scheduled exports to S3 / database
